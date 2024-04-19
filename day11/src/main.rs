@@ -1,5 +1,6 @@
 use std::char;
 use std::collections::HashSet;
+use std::env;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -11,50 +12,43 @@ fn show_universe(board: &Vec<Vec<char>>) {
     }
 }
 
-fn expand(universe: &mut Vec<Vec<char>>) -> Vec<Vec<char>> {
-    let mut idx: usize = 0;
-    loop {
-        if idx == universe.len() {
-            break;
+fn extra_distance(
+    p_1: &Vec<usize>,
+    p_2: &Vec<usize>,
+    galaxy_rows: &HashSet<usize>,
+    galaxy_cols: &HashSet<usize>,
+    coef: usize,
+) -> usize {
+    let mut total: usize = 0;
+    let (x_1, y_1): (usize, usize) = (p_1[0], p_1[1]);
+    let (x_2, y_2): (usize, usize) = (p_2[0], p_2[1]);
+    for row in x_1.min(x_2)..x_1.max(x_2) {
+        if !galaxy_rows.contains(&row) {
+            total += coef;
         }
-        if !universe[idx].contains(&'#') {
-            universe.insert(idx, vec!['.'; universe[0].len()]);
-            idx += 1;
-        }
-        idx += 1;
     }
-    //expand universe colums
-    let mut col: usize = 0;
-    'col_loop: loop {
-        if col >= universe[0].len() - 1 {
-            break;
+    for col in y_1.min(y_2)..y_1.max(y_2) {
+        if !galaxy_cols.contains(&col) {
+            total += coef;
         }
-        for row in 0..universe.len() {
-            if universe[row][col] == '#' {
-                col += 1;
-                continue 'col_loop;
-            }
-            //duplicate col
-        }
-        for row in 0..universe.len() {
-            universe[row].insert(col, '.');
-        }
-        col += 2;
     }
-    universe.to_owned()
+    total
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
     let f = File::open("input").expect("File not found");
+    let coef: usize = args[1].parse::<usize>().unwrap() - 1;
     let reader = BufReader::new(f);
-    let mut lines: Vec<Vec<char>> = reader
+    let lines: Vec<Vec<char>> = reader
         .lines()
         .map(|s| s.unwrap().chars().collect())
         .collect();
 
-    //expand universe rows
-    let universe = expand(&mut lines);
-    show_universe(&universe);
+    // show_universe(&lines);
+    let mut galaxy_rows: HashSet<usize> = HashSet::new();
+    let mut galaxy_cols: HashSet<usize> = HashSet::new();
+    let universe = lines;
     let mut coords: Vec<Vec<usize>> = Vec::new();
 
     for row in 0..universe.len() {
@@ -62,13 +56,12 @@ fn main() {
             if universe[row][col] == '#' {
                 //getting galaxy coordinates
                 coords.push(vec![row, col]);
+                galaxy_rows.insert(row);
+                galaxy_cols.insert(col);
             }
         }
     }
 
-    for i in 0..coords.len() {
-        println!("{:?}", coords[i].len());
-    }
     let mut dists: Vec<Vec<usize>> = vec![vec![0usize]; coords.len()];
     let mut pairs: HashSet<(usize, usize)> = HashSet::new();
     for i in 0..coords.len() {
@@ -77,12 +70,14 @@ fn main() {
             if !pairs.contains(&(i.min(idx), i.max(idx))) {
                 let x = coords[i][0].abs_diff(coords[idx][0]);
                 let y = coords[i][1].abs_diff(coords[idx][1]);
-                dists[i].push(x + y);
+                let expansion_offset =
+                    extra_distance(&coords[i], &coords[idx], &galaxy_rows, &galaxy_cols, coef);
+                dists[i].push(x + y + expansion_offset);
                 pairs.insert((i.min(idx), i.max(idx)));
             }
         }
     }
-    let total: usize = dists.iter().flatten().sum();
+    let total: usize = dists.into_iter().flatten().sum();
     println!("{:?}", total);
     // println!("rows: {}", lines.len());
     // println!("cols: {}", lines[0].len());
