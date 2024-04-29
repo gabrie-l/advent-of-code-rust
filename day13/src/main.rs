@@ -1,38 +1,6 @@
-use std::error::Error;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::str;
-
-fn smudge(str1: &str, str2: &str) -> Result<String, Box<dyn Error>> {
-    //str1 is the string closest to the edge of the board
-    let mut diff_idx = None;
-    let mut diff_char = None;
-    for (idx, (c1, c2)) in str1.chars().zip(str2.chars()).enumerate() {
-        if c1 != c2 {
-            if diff_idx.is_some() {
-                return Err("More than one character difference".into()); // more than one char different
-            }
-
-            diff_idx = Some(idx);
-            diff_char = Some(c1)
-        }
-    }
-    let idx = diff_idx.unwrap();
-    let mut result = String::new();
-    for (i, c) in str1.chars().enumerate() {
-        if i == idx {
-            let switch = match diff_char.unwrap() {
-                '#' => '.',
-                _ => '#',
-            };
-            result.push(switch);
-        } else {
-            result.push(c);
-        }
-    }
-    Ok(result)
-}
 
 fn transpose(board: &[String]) -> Vec<String> {
     let char_matrix: Vec<Vec<char>> = board.iter().map(|s| s.chars().collect()).collect();
@@ -48,17 +16,35 @@ fn transpose(board: &[String]) -> Vec<String> {
     res
 }
 
+fn diff(s1: &str, s2: &str) -> u8 {
+    let mut count_diff = 0u8;
+    for (c1, c2) in s1.chars().zip(s2.chars()) {
+        if c1 != c2 {
+            count_diff += 1
+        }
+    }
+    count_diff
+}
+
 fn is_mirror(board: &[String], mux: usize) -> usize {
     let rows = board.len();
     for i in 0..rows - 1 {
         let mut start = i;
         let mut end = i + 1;
-        while board[start] == board[end] {
+        let mut smudges = 0u8;
+        while board[start] == board[end] || smudges <= 1 {
+            let d = diff(&board[start], &board[end]);
+            if d > 0 {
+                smudges += d;
+            }
             end += 1;
             start = start.checked_sub(1).unwrap_or(end + 1);
             if start > end || end == rows {
-                show_board(board);
-                return (i + 1) * mux;
+                if smudges == 1 {
+                    return (i + 1) * mux;
+                } else {
+                    break;
+                }
             }
         }
     }
@@ -68,7 +54,6 @@ fn is_mirror(board: &[String], mux: usize) -> usize {
 fn find_mirror(board: &[String]) -> usize {
     let res = is_mirror(board, 100);
     if res > 0 {
-        println!("res: {res}");
         res
     } else {
         is_mirror(&transpose(board), 1)
@@ -93,7 +78,6 @@ fn main() {
         if l.is_empty() {
             let tmp = find_mirror(&board);
             sum += tmp;
-            println!("TMP: {tmp}\n");
             board = Vec::new();
             continue;
         }
