@@ -51,42 +51,48 @@ fn move_beam(
         return 0;
     }
     let curr_pos = cave.board[row][col];
-    let mut new_dirs: Vec<Direction> = Vec::new();
-    match (&dir, curr_pos) {
-        (_, '.') => new_dirs.push(dir),
+    // let mut new_dirs: Vec<Direction> = Vec::new();
+    let new_dirs: Vec<Direction> = match (&dir, curr_pos) {
+        (_, '.') => [dir].to_vec(), //new_dirs.push(dir),
         (d, '-') => match d {
             direction if *direction == Direction::Left || *direction == Direction::Right => {
-                new_dirs.push(dir)
+                [dir].to_vec()
+                // new_dirs.push(dir)
             }
             _ => {
-                new_dirs.push(Direction::Left);
-                new_dirs.push(Direction::Right);
+                [Direction::Left, Direction::Right].to_vec()
+                // new_dirs.push(Direction::Left);
+                // new_dirs.push(Direction::Right);
             }
         },
         (d, '|') => match d {
             direction if *direction == Direction::Up || *direction == Direction::Down => {
-                new_dirs.push(dir)
+                [dir].to_vec()
+                // new_dirs.push(dir)
             }
             _ => {
-                new_dirs.push(Direction::Up);
-                new_dirs.push(Direction::Down);
+                [Direction::Up, Direction::Down].to_vec()
+                // new_dirs.push(Direction::Up);
+                // new_dirs.push(Direction::Down);
             }
         },
         (d, '/') => match *d {
-            Direction::Right => new_dirs.push(Direction::Up),
-            Direction::Up => new_dirs.push(Direction::Right),
-            Direction::Left => new_dirs.push(Direction::Down),
-            _ => new_dirs.push(Direction::Left),
+            Direction::Right => [Direction::Up].to_vec(), //new_dirs.push(Direction::Up),
+            Direction::Up => [Direction::Right].to_vec(), //new_dirs.push(Direction::Right),
+            Direction::Left => [Direction::Down].to_vec(), //new_dirs.push(Direction::Down),
+            _ => [Direction::Left].to_vec(),              //new_dirs.push(Direction::Left),
         },
         (d, '\\') => match *d {
-            Direction::Right => new_dirs.push(Direction::Down),
-            Direction::Down => new_dirs.push(Direction::Right),
-            Direction::Left => new_dirs.push(Direction::Up),
-            _ => new_dirs.push(Direction::Left),
+            Direction::Right => [Direction::Down].to_vec(), //new_dirs.push(Direction::Down),
+            Direction::Down => [Direction::Right].to_vec(), //new_dirs.push(Direction::Right),
+            Direction::Left => [Direction::Up].to_vec(),    //new_dirs.push(Direction::Up),
+            _ => [Direction::Left].to_vec(),                // new_dirs.push(Direction::Left),
         },
 
-        _ => {}
-    }
+        _ => {
+            vec![]
+        }
+    };
     let mut acc = 0u16;
     if !cave.seen[row][col] {
         acc += 1;
