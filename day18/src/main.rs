@@ -1,4 +1,5 @@
 use std::ops::Add;
+use std::ops::Mul;
 macro_rules! read_input {
     ($name: expr) => {{
         use std::fs::File;
@@ -35,8 +36,8 @@ impl Point {
     fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
-    fn add_dir(&self, dir: &Direction) -> Self {
-        *self + dir.to_point()
+    fn add_dir(&self, dir: &Direction, mux: i64) -> Self {
+        *self + dir.to_point() * mux
     }
     // add code here
 }
@@ -91,23 +92,31 @@ impl Add for Point {
         }
     }
 }
+impl Mul<i64> for Point {
+    type Output = Self;
 
-fn dig(dir: Direction, quant: usize, acc: &mut Vec<Point>) {
-    if acc.is_empty() {
-        acc.push(Point::new(0, 0))
-    }
-    for _ in 0..quant {
-        acc.push(acc.last().unwrap().add_dir(&dir))
+    fn mul(self, rhs: i64) -> Self {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
     }
 }
 
-fn volume<A, P>(points: &Vec<Point>, area_fn: A, picks_fn: P) -> i64
+fn dig(dir: Direction, quant: i64, acc: &mut Vec<Point>) {
+    if acc.is_empty() {
+        acc.push(Point::new(0, 0))
+    }
+    acc.push(acc.last().unwrap().add_dir(&dir, quant))
+}
+
+fn volume<A, P>(points: &Vec<Point>, quant: i64, area_fn: A, picks_fn: P) -> i64
 where
     A: Fn(&Vec<Point>) -> i64,
     P: Fn(i64, i64) -> i64,
 {
     let area = area_fn(points);
-    picks_fn(area, points.len() as i64) + points.len() as i64
+    picks_fn(area, quant) + quant
 }
 
 fn main() {
@@ -116,17 +125,22 @@ fn main() {
     let mut quantifiers = Vec::new();
     colors.iter().for_each(|c| {
         directions.push(Direction::from(c.chars().last().unwrap() as u8 - b'0'));
-        quantifiers.push(usize::from_str_radix(&c[1..6], 16).unwrap());
+        quantifiers.push(i64::from_str_radix(&c[1..6], 16).unwrap());
     });
 
     let mut points: Vec<Point> = Vec::new();
+    let mut count: i64 = 0;
     for i in 0..directions.len() {
-        dig(directions[i].clone(), quantifiers[i], &mut points)
+        dig(directions[i].clone(), quantifiers[i], &mut points);
+        count += quantifiers[i];
     }
-    println!("total point count: {} ", points.len(),);
+    points.pop();
+    // points.reverse();
+    println!("total point count: {} ", points.len());
 
     let v = volume(
         &points,
+        count,
         |v| {
             let mut acc = 0i64;
             for i in 0..v.len() {
