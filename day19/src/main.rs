@@ -139,7 +139,7 @@ fn range_pass<'a>(
             if f.0 <= f.1 {
                 ranges.insert(p, f);
             } else {
-                break;
+                return 0;
             }
         } else {
             total += range_pass(item, ranges.clone(), workflows)
